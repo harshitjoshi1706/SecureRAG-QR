@@ -2,6 +2,9 @@ from pathlib import Path
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.ingestion.cleaner import clean_text
 from app.ingestion.chunker import chunk_text
+import uuid
+from app.rag.embeddings import generate_embeddings
+from app.rag.vector_store import store_chunks
 
 from app.ingestion.pdf_loader import extract_text_from_pdf
 
@@ -37,8 +40,23 @@ async def upload_document(file: UploadFile = File(...)):
        chunk_size=1000,
        overlap=200
     )
+    document_id = str(uuid.uuid4())
+
+    chunk_texts = [
+        chunk["text"]
+        for chunk in chunks
+    ]
+
+    embeddings = generate_embeddings(chunk_texts)
+
+    store_chunks(
+        document_id=document_id,
+        chunks=chunks,
+        embeddings=embeddings
+    )
 
     return {
+        "document_id": document_id,
         "filename": file.filename,
         "content_type": file.content_type,
         "page_count": extracted["page_count"],

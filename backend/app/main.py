@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.documents import router as documents_router
 from app.rag.embeddings import generate_embedding
+from app.rag.vector_store import get_chunk_count
 
 
 app = FastAPI(
@@ -40,6 +41,11 @@ def health_check():
         "application": "SecureRAG-QR"
     }
 
+@app.get("/api/vector-store/count")
+def vector_store_count():
+    return {
+        "stored_chunks": get_chunk_count()
+    }
 
 @app.get("/api/test-embedding")
 def test_embedding():
