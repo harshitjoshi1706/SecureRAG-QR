@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.documents import router as documents_router
 from app.rag.embeddings import generate_embedding
 from app.rag.vector_store import get_chunk_count
+from app.api.query import router as query_router
+from app.llm.ollama_client import generate_structured_answer
 
 
 app = FastAPI(
@@ -58,3 +60,15 @@ def test_embedding():
         "embedding_dimension": len(embedding),
         "first_10_values": embedding[:10]
     }
+
+app.include_router(
+    documents_router,
+    prefix="/api/documents",
+    tags=["Documents"]
+)
+
+app.include_router(
+    query_router,
+    prefix="/api/query",
+    tags=["Query"]
+)
