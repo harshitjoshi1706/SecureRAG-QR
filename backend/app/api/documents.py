@@ -1,5 +1,7 @@
 from pathlib import Path
 from fastapi import APIRouter, UploadFile, File, HTTPException
+from app.ingestion.cleaner import clean_text
+from app.ingestion.chunker import chunk_text
 
 from app.ingestion.pdf_loader import extract_text_from_pdf
 
@@ -28,10 +30,19 @@ async def upload_document(file: UploadFile = File(...)):
 
     extracted = extract_text_from_pdf(str(file_path))
 
+    cleaned_text = clean_text(extracted["text"])
+
+    chunks = chunk_text(
+       cleaned_text,
+       chunk_size=1000,
+       overlap=200
+    )
+
     return {
         "filename": file.filename,
         "content_type": file.content_type,
         "page_count": extracted["page_count"],
         "character_count": len(extracted["text"]),
-        "preview": extracted["text"][:500]
+        "preview": extracted["text"][:500],
+        "first_chunk": chunks[0] if chunks else None
     }

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.documents import router as documents_router
+from app.rag.embeddings import generate_embedding
 
 
 app = FastAPI(
@@ -37,4 +38,17 @@ def health_check():
     return {
         "status": "ok",
         "application": "SecureRAG-QR"
+    }
+
+
+@app.get("/api/test-embedding")
+def test_embedding():
+    text = "SecureRAG-QR converts document knowledge into secure QR payloads"
+
+    embedding = generate_embedding(text)
+
+    return {
+        "text": text,
+        "embedding_dimension": len(embedding),
+        "first_10_values": embedding[:10]
     }
