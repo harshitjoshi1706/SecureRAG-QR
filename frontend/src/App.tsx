@@ -1,23 +1,24 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+import DocumentUpload from "../components/DocumentUpload";
+import QueryDocument from "../components/QueryDocument";
 
 function App() {
-  const [backendStatus, setBackendStatus] = useState("Checking backend...");
-
-  useEffect(() => {
-    fetch("http://localhost:8000/api/health")
-      .then((response) => response.json())
-      .then((data) => {
-        setBackendStatus(`${data.application}: ${data.status}`);
-      })
-      .catch(() => {
-        setBackendStatus("Backend connection failed");
-      });
-  }, []);
+  const [documentId, setDocumentId] = useState("");
 
   return (
     <div>
       <h1>SecureRAG-QR</h1>
-      <p>{backendStatus}</p>
+
+      <DocumentUpload
+        onUploadSuccess={setDocumentId}
+      />
+
+      {documentId && (
+        <QueryDocument
+          documentId={documentId}
+        />
+      )}
     </div>
   );
 }

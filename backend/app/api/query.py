@@ -11,12 +11,12 @@ router = APIRouter()
 class QueryRequest(BaseModel):
     query: str
     document_id: str
-    top_k: int = 5
+    password: str
+    top_k: int = 3
 
 
 @router.post("/")
 def query_document(request: QueryRequest):
-
     chunks = retrieve_chunks(
         query=request.query,
         document_id=request.document_id,
@@ -29,13 +29,16 @@ def query_document(request: QueryRequest):
         "results": chunks
     }
 
+
 @router.post("/answer")
 def answer_document(request: QueryRequest):
-
     result = run_rag_pipeline(
         query=request.query,
         document_id=request.document_id,
+        password=request.password,
         top_k=request.top_k
     )
+
+    result.pop("encrypted", None)
 
     return result

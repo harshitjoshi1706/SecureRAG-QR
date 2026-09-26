@@ -1,12 +1,16 @@
+import json
+
 from app.rag.retriever import retrieve_chunks
 from app.llm.ollama_client import generate_structured_answer
-import json
+from app.compression.compressor import compress_data
+from app.crypto.encryptor import encrypt_data
 
 
 def run_rag_pipeline(
     query: str,
     document_id: str,
-    top_k: int = 5
+    password: str,
+    top_k: int = 3
 ) -> dict:
 
     retrieved_chunks = retrieve_chunks(
@@ -58,24 +62,54 @@ Rules:
 """
 
     structured_answer = generate_structured_answer(prompt)
-    retrieved_text_size = len(context.encode("utf-8"))
+
+    retrieved_text_size = len(
+        context.encode("utf-8")
+    )
 
     compact_json = json.dumps(
         structured_answer.model_dump(),
         separators=(",", ":")
     )
 
+    compact_bytes = compact_json.encode("utf-8")
+
     compact_payload_size = len(
-        compact_json.encode("utf-8")
+        compact_bytes
+    )
+
+    compressed_bytes = compress_data(
+        compact_bytes
+    )
+
+    compressed_payload_size = len(
+        compressed_bytes
+    )
+
+    encrypted = encrypt_data(
+        data=compressed_bytes,
+        password=password
+    )
+
+    encrypted_payload_size = len(
+        encrypted["ciphertext"]
     )
 
     return {
-    "query": query,
-    "answer": structured_answer.model_dump(),
-    "size_metrics": {
-        "retrieved_context_bytes": retrieved_text_size,
-        "compact_payload_bytes": compact_payload_size,
-        "reduction_bytes": retrieved_text_size - compact_payload_size
-    },
-    "sources": retrieved_chunks
-}
+        "query": query,
+        "answer": structured_answer.model_dump(),
+        "size_metrics": {
+            "retrieved_context_bytes": retrieved_text_size,
+            "compact_payload_bytes": compact_payload_size,
+            "compressed_payload_bytes": compressed_payload_size,
+            "encrypted_payload_bytes": encrypted_payload_size,
+            "reduction_bytes": (
+                retrieved_text_size - compact_payload_size
+            ),
+            "compression_saved_bytes": (
+                compact_payload_size - compressed_payload_size
+            )
+        },
+        "sources": retrieved_chunks,
+        "encrypted": encrypted
+    }
