@@ -39,6 +39,4 @@ def answer_document(request: QueryRequest):
         top_k=request.top_k
     )
 
-    result.pop("encrypted", None)
-
     return result

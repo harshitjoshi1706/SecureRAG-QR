@@ -1,9 +1,11 @@
 import json
+import uuid
 
 from app.rag.retriever import retrieve_chunks
 from app.llm.ollama_client import generate_structured_answer
 from app.compression.compressor import compress_data
 from app.crypto.encryptor import encrypt_data
+from app.transfer_store import save_transfer
 
 
 def run_rag_pipeline(
@@ -95,21 +97,34 @@ Rules:
         encrypted["ciphertext"]
     )
 
+    size_metrics = {
+        "retrieved_context_bytes": retrieved_text_size,
+        "compact_payload_bytes": compact_payload_size,
+        "compressed_payload_bytes": compressed_payload_size,
+        "encrypted_payload_bytes": encrypted_payload_size,
+        "reduction_bytes": (
+            retrieved_text_size - compact_payload_size
+        ),
+        "compression_saved_bytes": (
+            compact_payload_size - compressed_payload_size
+        )
+    }
+
+    transfer_id = str(uuid.uuid4())
+
+    save_transfer(
+        transfer_id,
+        {
+            "encrypted": encrypted,
+            "answer": structured_answer.model_dump(),
+            "size_metrics": size_metrics
+        }
+    )
+
     return {
+        "transfer_id": transfer_id,
         "query": query,
         "answer": structured_answer.model_dump(),
-        "size_metrics": {
-            "retrieved_context_bytes": retrieved_text_size,
-            "compact_payload_bytes": compact_payload_size,
-            "compressed_payload_bytes": compressed_payload_size,
-            "encrypted_payload_bytes": encrypted_payload_size,
-            "reduction_bytes": (
-                retrieved_text_size - compact_payload_size
-            ),
-            "compression_saved_bytes": (
-                compact_payload_size - compressed_payload_size
-            )
-        },
-        "sources": retrieved_chunks,
-        "encrypted": encrypted
+        "size_metrics": size_metrics,
+        "sources": retrieved_chunks
     }

@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app.rag.pipeline import run_rag_pipeline
+from app.transfer_store import get_transfer
 from app.qr.packet import create_packet, packet_to_json
 from app.qr.fragmenter import fragment_packet
 from app.qr.generator import generate_qr_codes
@@ -13,23 +13,23 @@ router = APIRouter()
 
 
 class TransferRequest(BaseModel):
-    query: str
-    document_id: str
-    password: str
-    top_k: int = 3
+    transfer_id: str
 
 
 @router.post("/generate")
 def generate_transfer(request: TransferRequest):
 
-    result = run_rag_pipeline(
-        query=request.query,
-        document_id=request.document_id,
-        password=request.password,
-        top_k=request.top_k
+    stored = get_transfer(
+        request.transfer_id
     )
 
-    encrypted = result["encrypted"]
+    if stored is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Transfer not found."
+        )
+
+    encrypted = stored["encrypted"]
 
     packet = create_packet(
         salt=encrypted["salt"],
@@ -64,6 +64,6 @@ def generate_transfer(request: TransferRequest):
         "fragment_count": len(fragments),
         "qr_count": len(qr_files),
         "qr_urls": qr_urls,
-        "answer": result["answer"],
-        "size_metrics": result["size_metrics"]
+        "answer": stored["answer"],
+        "size_metrics": stored["size_metrics"]
     }

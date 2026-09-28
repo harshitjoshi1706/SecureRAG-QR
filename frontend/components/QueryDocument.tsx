@@ -58,6 +58,17 @@ function QueryDocument({ documentId }: Props) {
       );
 
       setAnswer(response.data);
+
+      localStorage.setItem(
+        "secureRagTransferId",
+        response.data.transfer_id
+      );
+
+      console.log(
+        "Transfer ID:",
+        response.data.transfer_id
+      );
+
       setTransfer(null);
     } catch (error) {
       console.error(error);
@@ -68,13 +79,12 @@ function QueryDocument({ documentId }: Props) {
   };
 
   const handleGenerateQR = async () => {
-    if (!query.trim()) {
-      alert("Enter a question first.");
-      return;
-    }
+    const transferId =
+      answer?.transfer_id ||
+      localStorage.getItem("secureRagTransferId");
 
-    if (!password.trim()) {
-      alert("Enter an encryption password.");
+    if (!transferId) {
+      alert("No transfer ID found. Ask a question first.");
       return;
     }
 
@@ -84,10 +94,7 @@ function QueryDocument({ documentId }: Props) {
       const response = await api.post(
         "/api/transfer/generate",
         {
-          query,
-          document_id: documentId,
-          password,
-          top_k: 3,
+          transfer_id: transferId,
         }
       );
 
