@@ -1,0 +1,28 @@
+.app-modes { display: flex; justify-content: center; gap: 12px; margin: 0 16px 28px; }
+.app-modes button, .qr-receiver button {
+  font: inherit; padding: 10px 18px; border-radius: 8px; border: 1px solid var(--border);
+  color: var(--text-h); background: var(--bg); cursor: pointer;
+}
+.app-modes button[aria-pressed="true"], .qr-receiver button[type="submit"] {
+  background: var(--accent-bg); border-color: var(--accent-border); color: var(--text-h);
+}
+.qr-receiver { max-width: 760px; margin: 0 auto; padding: 0 24px 40px; text-align: left; overflow-wrap: anywhere; }
+.qr-receiver header, .qr-upload, .qr-progress, .qr-result { margin-bottom: 24px; }
+.qr-receiver header p { margin-top: 12px; }
+.qr-upload, .qr-progress, .qr-result { padding: 20px; border: 1px solid var(--border); border-radius: 12px; }
+.qr-upload { background: var(--accent-bg); }
+.qr-receiver label { display: block; font-weight: 600; color: var(--text-h); margin-bottom: 10px; }
+.qr-receiver input { font: inherit; max-width: 100%; box-sizing: border-box; }
+.qr-receiver input[type="password"] { display: block; width: 100%; padding: 10px; margin-bottom: 12px; }
+.qr-upload p { font-size: 0.875rem; margin-top: 12px; }
+.qr-progress p { margin-bottom: 8px; }
+.qr-progress progress { width: 100%; accent-color: var(--accent); }
+.qr-transfer-id { font-family: var(--mono); font-size: 0.875rem; }
+.qr-mode { color: var(--text-h); font-weight: 600; }
+.qr-receiver form, .qr-receiver [role="status"] { margin-bottom: 16px; }
+.qr-errors { border: 1px solid #dc6363; border-radius: 8px; padding: 0 12px; margin-bottom: 20px; }
+.qr-answer { white-space: pre-wrap; }
+.qr-receiver li { margin-bottom: 8px; }
+.qr-receiver button:disabled { opacity: 0.6; cursor: wait; }
+.qr-receiver button:focus-visible, .app-modes button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (max-width: 600px) { .qr-receiver { padding-inline: 12px; } }

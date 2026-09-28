@@ -4,7 +4,11 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.transfer_store import get_transfer
-from app.qr.packet import create_packet, packet_to_json
+from app.qr.packet import (
+    create_encrypted_packet,
+    create_unencrypted_packet,
+    packet_to_json
+)
 from app.qr.fragmenter import fragment_packet
 from app.qr.generator import generate_qr_codes
 
@@ -29,13 +33,19 @@ def generate_transfer(request: TransferRequest):
             detail="Transfer not found."
         )
 
-    encrypted = stored["encrypted"]
+    if stored["is_encrypted"]:
+        encrypted_data = stored["encrypted_data"]
 
-    packet = create_packet(
-        salt=encrypted["salt"],
-        nonce=encrypted["nonce"],
-        ciphertext=encrypted["ciphertext"]
-    )
+        packet = create_encrypted_packet(
+            salt=encrypted_data["salt"],
+            nonce=encrypted_data["nonce"],
+            ciphertext=encrypted_data["ciphertext"]
+        )
+
+    else:
+        packet = create_unencrypted_packet(
+            compressed_data=stored["compressed_data"]
+        )
 
     packet_json = packet_to_json(packet)
 
@@ -61,6 +71,7 @@ def generate_transfer(request: TransferRequest):
 
     return {
         "transfer_id": packet["transfer_id"],
+        "is_encrypted": stored["is_encrypted"],
         "fragment_count": len(fragments),
         "qr_count": len(qr_files),
         "qr_urls": qr_urls,

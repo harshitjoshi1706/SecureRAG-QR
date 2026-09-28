@@ -7,6 +7,7 @@ type Props = {
 
 type TransferResponse = {
   transfer_id: string;
+  is_encrypted: boolean;
   fragment_count: number;
   qr_count: number;
   qr_urls: string[];
@@ -19,12 +20,13 @@ type TransferResponse = {
     retrieved_context_bytes: number;
     compact_payload_bytes: number;
     compressed_payload_bytes: number;
-    encrypted_payload_bytes: number;
+    encrypted_payload_bytes: number | null;
   };
 };
 
 function QueryDocument({ documentId }: Props) {
   const [query, setQuery] = useState("");
+  const [encrypt, setEncrypt] = useState(true);
   const [password, setPassword] = useState("");
 
   const [answer, setAnswer] = useState<any>(null);
@@ -39,7 +41,7 @@ function QueryDocument({ documentId }: Props) {
       return;
     }
 
-    if (!password.trim()) {
+    if (encrypt && !password.trim()) {
       alert("Enter an encryption password.");
       return;
     }
@@ -52,7 +54,8 @@ function QueryDocument({ documentId }: Props) {
         {
           query,
           document_id: documentId,
-          password,
+          encrypt,
+          password: encrypt ? password : null,
           top_k: 3,
         }
       );
@@ -61,11 +64,6 @@ function QueryDocument({ documentId }: Props) {
 
       localStorage.setItem(
         "secureRagTransferId",
-        response.data.transfer_id
-      );
-
-      console.log(
-        "Transfer ID:",
         response.data.transfer_id
       );
 
@@ -121,16 +119,49 @@ function QueryDocument({ documentId }: Props) {
 
       <br />
 
-      <input
-        type="password"
-        value={password}
-        onChange={(event) => {
-          setPassword(event.target.value);
-        }}
-        placeholder="Encryption password"
-      />
+      <h3>Transfer Type</h3>
+
+      <label>
+        <input
+          type="radio"
+          checked={!encrypt}
+          onChange={() => {
+            setEncrypt(false);
+            setPassword("");
+          }}
+        />
+        Standard QR
+      </label>
 
       <br />
+
+      <label>
+        <input
+          type="radio"
+          checked={encrypt}
+          onChange={() => {
+            setEncrypt(true);
+          }}
+        />
+        Encrypted QR
+      </label>
+
+      <br />
+
+      {encrypt && (
+        <>
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value);
+            }}
+            placeholder="Encryption password"
+          />
+
+          <br />
+        </>
+      )}
 
       <button
         onClick={handleQuery}
@@ -161,6 +192,14 @@ function QueryDocument({ documentId }: Props) {
             {answer.answer.source_chunks.join(", ")}
           </p>
 
+          <h4>Transfer Mode</h4>
+
+          <p>
+            {answer.is_encrypted
+              ? "Encrypted"
+              : "Standard"}
+          </p>
+
           <h4>Payload Sizes</h4>
 
           <p>
@@ -178,10 +217,12 @@ function QueryDocument({ documentId }: Props) {
             {answer.size_metrics.compressed_payload_bytes} bytes
           </p>
 
-          <p>
-            Encrypted:{" "}
-            {answer.size_metrics.encrypted_payload_bytes} bytes
-          </p>
+          {answer.size_metrics.encrypted_payload_bytes !== null && (
+            <p>
+              Encrypted:{" "}
+              {answer.size_metrics.encrypted_payload_bytes} bytes
+            </p>
+          )}
 
           <button
             onClick={handleGenerateQR}
@@ -189,14 +230,21 @@ function QueryDocument({ documentId }: Props) {
           >
             {qrLoading
               ? "Generating QR..."
-              : "Generate Secure QR"}
+              : "Generate QR"}
           </button>
         </div>
       )}
 
       {transfer && (
         <div>
-          <h3>Secure QR Transfer</h3>
+          <h3>QR Transfer</h3>
+
+          <p>
+            Mode:{" "}
+            {transfer.is_encrypted
+              ? "Encrypted"
+              : "Standard"}
+          </p>
 
           <p>
             Transfer ID: {transfer.transfer_id}

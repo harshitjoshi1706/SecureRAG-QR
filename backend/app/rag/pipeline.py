@@ -11,7 +11,8 @@ from app.transfer_store import save_transfer
 def run_rag_pipeline(
     query: str,
     document_id: str,
-    password: str,
+    encrypt: bool,
+    password: str | None = None,
     top_k: int = 3
 ) -> dict:
 
@@ -88,14 +89,23 @@ Rules:
         compressed_bytes
     )
 
-    encrypted = encrypt_data(
-        data=compressed_bytes,
-        password=password
-    )
+    encrypted_data = None
+    encrypted_payload_size = None
 
-    encrypted_payload_size = len(
-        encrypted["ciphertext"]
-    )
+    if encrypt:
+        if not password:
+            raise ValueError(
+                "Password is required for encrypted transfer."
+            )
+
+        encrypted_data = encrypt_data(
+            data=compressed_bytes,
+            password=password
+        )
+
+        encrypted_payload_size = len(
+            encrypted_data["ciphertext"]
+        )
 
     size_metrics = {
         "retrieved_context_bytes": retrieved_text_size,
@@ -115,7 +125,9 @@ Rules:
     save_transfer(
         transfer_id,
         {
-            "encrypted": encrypted,
+            "is_encrypted": encrypt,
+            "encrypted_data": encrypted_data,
+            "compressed_data": compressed_bytes,
             "answer": structured_answer.model_dump(),
             "size_metrics": size_metrics
         }
@@ -124,6 +136,7 @@ Rules:
     return {
         "transfer_id": transfer_id,
         "query": query,
+        "is_encrypted": encrypt,
         "answer": structured_answer.model_dump(),
         "size_metrics": size_metrics,
         "sources": retrieved_chunks

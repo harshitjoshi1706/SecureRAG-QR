@@ -11,7 +11,8 @@ router = APIRouter()
 class QueryRequest(BaseModel):
     query: str
     document_id: str
-    password: str
+    encrypt: bool = True
+    password: str | None = None
     top_k: int = 3
 
 
@@ -35,6 +36,7 @@ def answer_document(request: QueryRequest):
     result = run_rag_pipeline(
         query=request.query,
         document_id=request.document_id,
+        encrypt=request.encrypt,
         password=request.password,
         top_k=request.top_k
     )
