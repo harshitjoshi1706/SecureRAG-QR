@@ -1,8 +1,8 @@
 import json
 import uuid
+from typing import Literal
 
 from app.rag.retriever import retrieve_chunks
-from app.llm.ollama_client import generate_structured_answer
 from app.compression.compressor import compress_data
 from app.crypto.encryptor import encrypt_data
 from app.transfer_store import save_transfer
@@ -13,8 +13,12 @@ def run_rag_pipeline(
     document_id: str,
     encrypt: bool,
     password: str | None = None,
-    top_k: int = 3
+    top_k: int = 3,
+    mode: Literal["fast", "ai"] = "fast"
 ) -> dict:
+
+    if mode not in ("fast", "ai"):
+        raise ValueError("Processing mode must be 'fast' or 'ai'.")
 
     retrieved_chunks = retrieve_chunks(
         query=query,
@@ -34,7 +38,27 @@ def run_rag_pipeline(
 
     context = "\n\n".join(context_parts)
 
-    prompt = f"""
+    if mode == "fast":
+        # Preserve the full text of the requested top-k chunks, in retrieval order.
+        # No Ollama import or generation call is made on this branch.
+        payload = {
+            "mode": "fast",
+            "query": query,
+            "retrieved_information": [
+                {
+                    "chunk_number": chunk["metadata"]["chunk_number"],
+                    "text": chunk["text"]
+                }
+                for chunk in retrieved_chunks
+            ],
+            "source_chunks": [
+                chunk["metadata"]["chunk_number"] for chunk in retrieved_chunks
+            ]
+        }
+    else:
+        from app.llm.ollama_client import generate_structured_answer
+
+        prompt = f"""
 You must answer using only the provided context.
 
 Question:
@@ -64,14 +88,15 @@ Rules:
 - Do not include explanations outside the JSON.
 """
 
-    structured_answer = generate_structured_answer(prompt)
+        structured_answer = generate_structured_answer(prompt)
+        payload = {**structured_answer.model_dump(), "mode": "ai"}
 
     retrieved_text_size = len(
         context.encode("utf-8")
     )
 
     compact_json = json.dumps(
-        structured_answer.model_dump(),
+        payload,
         separators=(",", ":")
     )
 
@@ -128,7 +153,7 @@ Rules:
             "is_encrypted": encrypt,
             "encrypted_data": encrypted_data,
             "compressed_data": compressed_bytes,
-            "answer": structured_answer.model_dump(),
+            "answer": payload,
             "size_metrics": size_metrics
         }
     )
@@ -137,7 +162,8 @@ Rules:
         "transfer_id": transfer_id,
         "query": query,
         "is_encrypted": encrypt,
-        "answer": structured_answer.model_dump(),
+        "answer": payload,
+        "mode": mode,
         "size_metrics": size_metrics,
         "sources": retrieved_chunks
     }

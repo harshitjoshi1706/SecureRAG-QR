@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -14,6 +16,7 @@ class QueryRequest(BaseModel):
     encrypt: bool = True
     password: str | None = None
     top_k: int = 3
+    mode: Literal["fast", "ai"] = "fast"
 
 
 @router.post("/")
@@ -38,7 +41,8 @@ def answer_document(request: QueryRequest):
         document_id=request.document_id,
         encrypt=request.encrypt,
         password=request.password,
-        top_k=request.top_k
+        top_k=request.top_k,
+        mode=request.mode
     )
 
     return result

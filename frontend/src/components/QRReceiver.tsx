@@ -154,9 +154,21 @@ export default function QRReceiver() {
       </ul></div>}
       {result && <article className="qr-result">
         <h2>Recovered Information</h2>
-        <h3>Answer</h3><p className="qr-answer">{result.answer}</p>
-        <h3>Facts</h3>
-        {result.facts.length ? <ul>{result.facts.map((fact, i) => <li key={i}>{fact}</li>)}</ul> : <p>No facts provided.</p>}
+        {result.mode === 'fast' ? <>
+          <p><strong>Mode:</strong> Fast Retrieval</p>
+          {result.query !== undefined && <p><strong>Query:</strong> {result.query}</p>}
+          <h3>Retrieved Information</h3>
+          {result.retrieved_information.length ? result.retrieved_information.map((chunk, i) => (
+            <section key={i}>
+              <h4>Chunk {chunk.chunk_number}</h4>
+              <p className="qr-answer">{chunk.text}</p>
+            </section>
+          )) : <p>No relevant chunks were retrieved.</p>}
+        </> : <>
+          <h3>Answer</h3><p className="qr-answer">{result.answer}</p>
+          <h3>Facts</h3>
+          {result.facts.length ? <ul>{result.facts.map((fact, i) => <li key={i}>{fact}</li>)}</ul> : <p>No facts provided.</p>}
+        </>}
         <h3>Source Chunks</h3><p>{result.source_chunks.join(', ') || 'None provided.'}</p>
       </article>}
       <button type="button" className="qr-reset" onClick={reset}>Clear / Reset Transfer</button>

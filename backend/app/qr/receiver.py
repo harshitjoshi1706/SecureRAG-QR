@@ -92,14 +92,36 @@ class QRReceiver:
             result = json.loads(recovered.decode("utf-8"))
         except (UnicodeDecodeError, ValueError) as error:
             raise ValueError("Recovered information is not valid UTF-8 JSON.") from error
-        if not isinstance(result, dict) or not isinstance(result.get("answer"), str):
-            raise ValueError("Recovered information must contain an answer string.")
-        facts, chunks = result.get("facts", []), result.get("source_chunks", [])
-        if not isinstance(facts, list) or not all(isinstance(item, str) for item in facts):
-            raise ValueError("Recovered facts must be a list of strings.")
+        if not isinstance(result, dict):
+            raise ValueError("Recovered information must be a JSON object.")
+        # Older AI transfers predate the mode field.
+        mode = result.get("mode", "ai")
+        if mode == "ai":
+            if not isinstance(result.get("answer"), str):
+                raise ValueError("Recovered information must contain an answer string.")
+            facts = result.get("facts", [])
+            if not isinstance(facts, list) or not all(isinstance(item, str) for item in facts):
+                raise ValueError("Recovered facts must be a list of strings.")
+            result = {**result, "facts": facts}
+        elif mode == "fast":
+            information = result.get("retrieved_information")
+            if not isinstance(information, list):
+                raise ValueError("Recovered retrieved information must be a list.")
+            if not all(
+                isinstance(item, dict)
+                and type(item.get("chunk_number")) is int
+                and isinstance(item.get("text"), str)
+                for item in information
+            ):
+                raise ValueError("Each retrieved item must contain an integer chunk_number and a text string.")
+            if "query" in result and not isinstance(result["query"], str):
+                raise ValueError("Recovered query must be a string.")
+        else:
+            raise ValueError("Recovered information has an unsupported mode.")
+        chunks = result.get("source_chunks", []) if mode == "ai" else result.get("source_chunks")
         if not isinstance(chunks, list) or not all(type(item) is int for item in chunks):
             raise ValueError("Recovered source chunks must be a list of integers.")
-        return {**result, "facts": facts, "source_chunks": chunks}
+        return {**result, "source_chunks": chunks}
 
     def reset(self):
         self.sessions.clear()

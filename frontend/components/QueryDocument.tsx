@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../services/api";
+import type { RecoveredInformation } from "../src/receiver/protocol";
 
 type Props = {
   documentId: string;
@@ -11,11 +12,7 @@ type TransferResponse = {
   fragment_count: number;
   qr_count: number;
   qr_urls: string[];
-  answer: {
-    answer: string;
-    facts: string[];
-    source_chunks: number[];
-  };
+  answer: RecoveredInformation;
   size_metrics: {
     retrieved_context_bytes: number;
     compact_payload_bytes: number;
@@ -24,12 +21,15 @@ type TransferResponse = {
   };
 };
 
+type QueryResponse = Pick<TransferResponse, "transfer_id" | "is_encrypted" | "answer" | "size_metrics">;
+
 function QueryDocument({ documentId }: Props) {
   const [query, setQuery] = useState("");
+  const [mode, setMode] = useState<"fast" | "ai">("fast");
   const [encrypt, setEncrypt] = useState(true);
   const [password, setPassword] = useState("");
 
-  const [answer, setAnswer] = useState<any>(null);
+  const [answer, setAnswer] = useState<QueryResponse | null>(null);
   const [transfer, setTransfer] = useState<TransferResponse | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -49,7 +49,7 @@ function QueryDocument({ documentId }: Props) {
     try {
       setLoading(true);
 
-      const response = await api.post(
+      const response = await api.post<QueryResponse>(
         "/api/query/answer",
         {
           query,
@@ -57,6 +57,7 @@ function QueryDocument({ documentId }: Props) {
           encrypt,
           password: encrypt ? password : null,
           top_k: 3,
+          mode,
         }
       );
 
@@ -119,6 +120,24 @@ function QueryDocument({ documentId }: Props) {
 
       <br />
 
+      <fieldset disabled={loading || qrLoading}>
+        <legend>Processing Mode</legend>
+        <label>
+          <input type="radio" name="processing-mode" value="fast"
+            checked={mode === "fast"} onChange={() => setMode("fast")} />
+          Fast Retrieval
+          <span style={{ display: "block" }}>Retrieve relevant document information directly.</span>
+          <span style={{ display: "block" }}>Fast — no LLM required.</span>
+        </label>
+        <label>
+          <input type="radio" name="processing-mode" value="ai"
+            checked={mode === "ai"} onChange={() => setMode("ai")} />
+          AI Summary
+          <span style={{ display: "block" }}>Generate a concise answer using Qwen3:4B.</span>
+          <span style={{ display: "block" }}>Slower — local LLM required.</span>
+        </label>
+      </fieldset>
+
       <h3>Transfer Type</h3>
 
       <label>
@@ -165,26 +184,36 @@ function QueryDocument({ documentId }: Props) {
 
       <button
         onClick={handleQuery}
-        disabled={loading}
+        disabled={loading || qrLoading}
       >
-        {loading ? "Generating..." : "Ask"}
+        {loading ? (mode === "fast" ? "Retrieving..." : "Generating...") : "Ask"}
       </button>
 
       {answer && (
         <div>
-          <h3>Answer</h3>
-
-          <p>{answer.answer.answer}</p>
-
-          <h4>Facts</h4>
-
-          <ul>
-            {answer.answer.facts.map(
-              (fact: string, index: number) => (
-                <li key={index}>{fact}</li>
-              )
-            )}
-          </ul>
+          {answer.answer.mode === "fast" ? (
+            <>
+              <h3>Retrieved Information</h3>
+              <p>Query: {answer.answer.query}</p>
+              {answer.answer.retrieved_information.length ? answer.answer.retrieved_information.map((chunk, index) => (
+                <section key={index}>
+                  <h4>Chunk {chunk.chunk_number}</h4>
+                  <p style={{ whiteSpace: "pre-wrap" }}>{chunk.text}</p>
+                </section>
+              )) : <p>No relevant chunks were retrieved.</p>}
+            </>
+          ) : (
+            <>
+              <h3>Answer</h3>
+              <p>{answer.answer.answer}</p>
+              <h4>Facts</h4>
+              <ul>
+                {answer.answer.facts.map((fact, index) => (
+                  <li key={index}>{fact}</li>
+                ))}
+              </ul>
+            </>
+          )}
 
           <h4>Source Chunks</h4>
 
@@ -193,6 +222,8 @@ function QueryDocument({ documentId }: Props) {
           </p>
 
           <h4>Transfer Mode</h4>
+
+          <p>Processing: {answer.answer.mode === "fast" ? "Fast Retrieval" : "AI Summary"}</p>
 
           <p>
             {answer.is_encrypted
@@ -226,7 +257,7 @@ function QueryDocument({ documentId }: Props) {
 
           <button
             onClick={handleGenerateQR}
-            disabled={qrLoading}
+            disabled={qrLoading || loading}
           >
             {qrLoading
               ? "Generating QR..."

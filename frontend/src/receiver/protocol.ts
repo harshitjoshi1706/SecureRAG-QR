@@ -21,11 +21,21 @@ export type Packet = {
   nonce?: string;
 };
 
-export type RecoveredInformation = {
+export type AISummary = {
+  mode?: 'ai';
   answer: string;
   facts: string[];
   source_chunks: number[];
 };
+
+export type FastRetrieval = {
+  mode: 'fast';
+  query?: string;
+  retrieved_information: { chunk_number: number; text: string }[];
+  source_chunks: number[];
+};
+
+export type RecoveredInformation = AISummary | FastRetrieval;
 
 function objectFromJSON(text: string): Record<string, unknown> {
   let value: unknown;
