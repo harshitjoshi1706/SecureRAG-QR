@@ -113,12 +113,14 @@ export default function QRReceiver() {
 
   return (
     <section className="qr-receiver" aria-labelledby="receiver-title">
-      <header>
-        <h2 id="receiver-title">SecureRAG-QR Receiver</h2>
-        <p>Upload the QR images from one transfer, in any order.</p>
+      <header className="section-heading">
+        <span className="section-icon teal" aria-hidden="true">▦</span>
+        <div><h2 id="receiver-title">Receiver</h2>
+        <p>Upload QR images to recover your information, in any order.</p></div>
       </header>
       <div className="qr-upload">
-        <label htmlFor="qr-images">Upload QR Image</label>
+        <span className="upload-icon" aria-hidden="true">↥</span>
+        <label htmlFor="qr-images">Upload QR Images</label>
         <input ref={input} id="qr-images" type="file" accept="image/*" multiple disabled={busy}
           aria-describedby="qr-image-help"
           onChange={event => {
@@ -128,7 +130,7 @@ export default function QRReceiver() {
           }} />
         <p id="qr-image-help">Select one or more images, with one QR code per image. PNG or JPEG works best.</p>
       </div>
-      <div className="qr-progress" aria-live="polite">
+      <div className={`qr-progress${complete ? " is-complete" : ""}`} aria-live="polite">
         <p><strong>Transfer ID:</strong> <span className="qr-transfer-id">{transfer?.id ?? '—'}</span></p>
         <p><strong>Fragments received:</strong> {received} / {transfer?.total ?? '—'}</p>
         <progress value={received} max={transfer?.total ?? 1} aria-label="Fragments received" />
@@ -144,7 +146,7 @@ export default function QRReceiver() {
               disabled={busy} onChange={event => setPassword(event.target.value)} required />
           </>}
           <button type="submit" disabled={busy || (packet.encrypted && !password)}>
-            {busy ? 'Recovering…' : packet.encrypted ? 'Decrypt' : 'Recover information'}
+            {busy ? 'Recovering…' : 'Recover Information'}
           </button>
         </form>
       )}
@@ -153,7 +155,7 @@ export default function QRReceiver() {
         {errors.map((error, index) => <li key={index}>{error}</li>)}
       </ul></div>}
       {result && <article className="qr-result">
-        <h2>Recovered Information</h2>
+        <div className="recovered-heading"><h2>Recovered Information</h2><span className="badge success">Success</span></div>
         {result.mode === 'fast' ? <>
           <p><strong>Mode:</strong> Fast Retrieval</p>
           {result.query !== undefined && <p><strong>Query:</strong> {result.query}</p>}

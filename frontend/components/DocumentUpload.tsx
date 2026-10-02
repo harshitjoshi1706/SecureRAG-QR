@@ -47,36 +47,31 @@ function DocumentUpload({ onUploadSuccess }: Props) {
   };
 
   return (
-    <div>
-      <h2>Upload Document</h2>
-
-      <input
-        type="file"
-        accept=".pdf"
-        onChange={(event) => {
-          const selectedFile =
-            event.target.files?.[0] || null;
-
-          setFile(selectedFile);
-        }}
-      />
-
-      <button
-        onClick={handleUpload}
-        disabled={loading}
-      >
-        {loading ? "Uploading..." : "Upload"}
+    <section className="panel upload-panel" aria-labelledby="upload-title">
+      <div className="section-heading"><span className="step">1</span><div><h2 id="upload-title">Upload Document</h2><p>Select a PDF document to process</p></div></div>
+      <label className="upload-zone">
+        <span className="upload-icon" aria-hidden="true">↥</span>
+        <strong>Select your PDF document</strong>
+        <span>Click to browse your files</span>
+        <input type="file" accept=".pdf" aria-label="Select PDF document"
+          onChange={(event) => {
+            const selectedFile = event.target.files?.[0] || null;
+            setFile(selectedFile);
+          }} />
+        <small>PDF documents only</small>
+      </label>
+      {file && <p className="selected-file">Selected: <strong>{file.name}</strong></p>}
+      <button className="primary upload-button" onClick={handleUpload} disabled={loading}>
+        {loading ? "Uploading..." : "Upload Document"}
       </button>
-
-      {result && (
-        <div>
-          <p>File: {result.filename}</p>
-          <p>Pages: {result.page_count}</p>
-          <p>Chunks: {result.chunk_count}</p>
-          <p>Document ID: {result.document_id}</p>
+      {result ? (
+        <div className="document-card">
+          <div className="document-name"><span className="pdf-icon" aria-hidden="true">PDF</span><div><strong>{result.filename}</strong><span className="badge success">Processed</span></div></div>
+          <dl className="document-stats"><div><dt>Pages</dt><dd>{result.page_count}</dd></div><div><dt>Chunks</dt><dd>{result.chunk_count}</dd></div><div><dt>Characters</dt><dd>{result.character_count.toLocaleString()}</dd></div></dl>
+          <p className="transfer-id">Document ID: {result.document_id}</p>
         </div>
-      )}
-    </div>
+      ) : <p className="upload-note">Document details will appear here after processing.</p>}
+    </section>
   );
 }
 
