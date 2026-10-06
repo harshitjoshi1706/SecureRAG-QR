@@ -1,8 +1,8 @@
-from pathlib import Path
+from pathlib import Path # pathlib is a built-in Python module used to work with file and folder paths.
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.ingestion.cleaner import clean_text
 from app.ingestion.chunker import chunk_text
-import uuid
+import uuid                                 # uuid is a built-in Python module used to generate unique identifiers.
 from app.rag.embeddings import generate_embeddings
 from app.rag.vector_store import store_chunks
 
@@ -13,7 +13,7 @@ router = APIRouter()
 
 UPLOAD_DIR = Path("storage/documents")
 
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True) # This line creates the directory specified by UPLOAD_DIR if it does not already exist. The parents=True argument allows the creation of any necessary parent directories, and exist_ok=True prevents an error if the directory already exists.
 
 
 @router.post("/upload")

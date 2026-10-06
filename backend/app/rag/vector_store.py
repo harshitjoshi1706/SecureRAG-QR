@@ -1,7 +1,7 @@
 import chromadb
 
 
-client = chromadb.PersistentClient(
+client = chromadb.PersistentClient( #  Persistent means: Save the vector database to disk, so it survives backend restarts.
     path="storage/chroma"
 )
 

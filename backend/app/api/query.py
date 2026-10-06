@@ -1,7 +1,7 @@
 from typing import Literal
 
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel # Pydantic is used by FastAPI for validating incoming data.
 
 from app.rag.retriever import retrieve_chunks
 from app.rag.pipeline import run_rag_pipeline
